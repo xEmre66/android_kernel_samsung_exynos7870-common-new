@@ -17,13 +17,13 @@
 #include "exynos7870-gtactive2lte_fingerprint-sensor_02.dtsi"
 
 / {
-	model = "Samsung Galaxy Tab Active2 WIFI rev02 board based on Exynos7870";
+	model = "Samsung Galaxy Tab Active2 WIFI rev03 board based on Exynos7870";
         model_info-chip = <7870>;
         model_info-platform = "android";
         model_info-subtype = "samsung";
         model_info-hw_rev = <3>;
-        model_info-hw_rev_end = <3>;
-	compatible = "samsung, Galaxy Tab Active2 WIFI 02", "samsung,exynos7870";
+        model_info-hw_rev_end = <255>;
+	compatible = "samsung, Galaxy Tab Active2 WIFI 03", "samsung,exynos7870";
 
 	cnss_dcdc_en: cnss_dcdc_en {
 		compatible = "regulator-fixed";
@@ -38,13 +38,6 @@
 	};
 
 	pinctrl@139F0000 {
-		acc_int: acc_int {
-			samsung,pins = "gpa1-2";
-			samsung,pin-function = <0xF>;
-			samsung,pin-pud = <0>;
-			samsung,pin-drv = <0>;
-		};
-
 		grip_wifi_int: grip_wifi_int {
 			samsung,pins = "gpa2-3";
 			samsung,pin-function = <0xF>;
@@ -530,6 +523,13 @@
 			samsung,pin-pud = <0>;
 		};
 
+		acc_int: acc_int {
+			samsung,pins = "gpa1-2";
+			samsung,pin-function = <0xF>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
 		sensor_ldo_en: sensor_ldo_en {
 			samsung,pins = "gpf4-2";
 			samsung,pin-function = <1>;
@@ -552,43 +552,29 @@
 		gpio = <&gpd4 3 0>;
 		enable-active-high;
 	};
-
-	pinctrl@139B0000 {
-		tsp_en: tsp-en {
-			samsung,pins = "gpd4-3";
-			samsung,pin-function = <0x1>;
-			samsung,pin-pud = <0>;
-			samsung,pin-drv = <0>;
-		};
-	};
-
-	i2c@13840000 {
-		pinctrl-names = "default";
-		pinctrl-0 = <&i2c3_bus &tsp_en>;
-	};
-
+		
 	pinctrl@139B0000 {
 		uart1_rts: uart1-rts {
 			samsung,pins = "gpd2-3";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <1>;
-			samsung,pin-con-pdn = <3>;
-			samsung,pin-pud-pdn = <1>;
+			samsung,pin-pud = <3>;
+			samsung,pin-con-pdn = <1>;
+			samsung,pin-pud-pdn = <3>;
 		};
 
 		uart1_cts: uart1-cts {
 			samsung,pins = "gpd2-2";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <1>;
-			samsung,pin-con-pdn = <3>;
-			samsung,pin-pud-pdn = <1>;
+			samsung,pin-pud = <3>;
+			samsung,pin-con-pdn = <2>;
+			samsung,pin-pud-pdn = <3>;
 		};
 
 		uart1_tx: uart1-tx {
 			samsung,pins = "gpd2-1";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <3>;
-			samsung,pin-con-pdn = <3>;
+			samsung,pin-con-pdn = <1>;
 			samsung,pin-pud-pdn = <3>;
 		};
 
@@ -596,15 +582,18 @@
 			samsung,pins = "gpd2-0";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <3>;
-			samsung,pin-con-pdn = <3>;
+			samsung,pin-con-pdn = <2>;
 			samsung,pin-pud-pdn = <3>;
 		};
 	};
 	
 	serial_1: uart@13800000 {
 		status = "okay";
-		pinctrl-names = "default";
-		pinctrl-0 = <&uart1_rts &uart1_cts &uart1_tx &uart1_rx>;
+	};
+	
+	serial@13800000 {
+	    pinctrl-names = "default";
+		pinctrl-6 = <&uart1_rts &uart1_cts &uart1_tx &uart1_rx>;
 	};
 
 	gps {

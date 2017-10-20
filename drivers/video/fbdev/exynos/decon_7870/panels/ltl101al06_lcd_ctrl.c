@@ -361,7 +361,7 @@ static int ltl101al06_probe(struct dsim_device *dsim)
 
 	if (lcdtype == 0) {
 		priv->lcdConnected = 0;
-		dev_err(&lcd->ld->dev, "%s: lcd was not connected\n", __func__);
+		dev_err(&lcd->ld->dev, "dsim : %s lcd was not connected\n", __func__);
 		goto exit;
 	}
 
@@ -529,7 +529,7 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 	mutex_init(&lcd->lock);
 
 	ret = ltl101al06_probe(dsim);
-	if (ret < 0) {
+	if (ret) {
 		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
 		goto probe_err;
 	}

@@ -22,7 +22,6 @@
 #include "../decon_notify.h"
 
 #include "td4100_j7pop_param.h"
-#include "backlight_tuning.h"
 
 #if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)
 #include "mdnie.h"
@@ -38,7 +37,7 @@
 #endif
 
 #define DSI_WRITE(cmd, size)		do {				\
-	ret |= dsim_write_hl_data(lcd, cmd, size);			\
+	ret = dsim_write_hl_data(lcd, cmd, size);			\
 	if (ret < 0) {							\
 		dev_err(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
 		ret = -EPERM;						\
@@ -47,7 +46,7 @@
 } while (0)
 
 #define DSI_WRITE_G(cmd, size)		do {				\
-	ret |= dsim_write_hl_data_generic(lcd, cmd, size);			\
+	ret = dsim_write_hl_data_generic(lcd, cmd, size);			\
 	if (ret < 0) {							\
 		dev_err(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd); \
 		ret = -EPERM;						\
@@ -64,10 +63,7 @@ struct lcd_info {
 	struct lcd_device		*ld;
 	struct backlight_device		*bd;
 
-	union {
-		u32			value;
-		unsigned char		id[TD4100_ID_LEN];
-	} id_info;
+	unsigned char			id[3];
 	unsigned char			dump_info[3];
 	unsigned int 			data_type;
 
@@ -88,12 +84,14 @@ struct lcd_info {
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdSize)
 {
-	int ret = 0;
-	int retry = 5;
+	int ret;
+	int retry;
 	struct panel_private *priv = &lcd->dsim->priv;
 
 	if (!priv->lcdConnected)
-		return ret;
+		return cmdSize;
+
+	retry = 5;
 
 try_write:
 	if (cmdSize == 1)
@@ -115,12 +113,14 @@ try_write:
 
 static int dsim_write_hl_data_generic(struct lcd_info *lcd, const u8 *cmd, u32 cmdSize)
 {
-	int ret = 0;
-	int retry = 5;
+	int ret;
+	int retry;
 	struct panel_private *priv = &lcd->dsim->priv;
 
 	if (!priv->lcdConnected)
-		return ret;
+		return cmdSize;
+
+	retry = 5;
 
 try_write:
 	if (cmdSize == 1)
@@ -142,7 +142,7 @@ try_write:
 
 static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 {
-	int ret = 0;
+	int ret;
 	int retry = 4;
 	struct panel_private *priv = &lcd->dsim->priv;
 
@@ -260,20 +260,20 @@ static int td4100_read_init_info(struct lcd_info *lcd)
 	struct panel_private *priv = &lcd->dsim->priv;
 	int i = 0;
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
 
 	if (lcdtype == 0) {
 		priv->lcdConnected = 0;
 		goto read_exit;
 	}
 
-	lcd->id_info.id[0] = (lcdtype & 0xFF0000) >> 16;
-	lcd->id_info.id[1] = (lcdtype & 0x00FF00) >> 8;
-	lcd->id_info.id[2] = (lcdtype & 0x0000FF) >> 0;
+	lcd->id[0] = (lcdtype & 0xFF0000) >> 16;
+	lcd->id[1] = (lcdtype & 0x00FF00) >> 8;
+	lcd->id[2] = (lcdtype & 0x0000FF) >> 0;
 
 	dev_info(&lcd->ld->dev, "READ ID : ");
 	for (i = 0; i < TD4100_ID_LEN; i++)
-		dev_info(&lcd->ld->dev, "%02x, ", lcd->id_info.id[i]);
+		dev_info(&lcd->ld->dev, "%02x, ", lcd->id[i]);
 	dev_info(&lcd->ld->dev, "\n");
 
 read_exit:
@@ -490,7 +490,7 @@ static int td4100_probe(struct dsim_device *dsim)
 
 	td4100_read_init_info(lcd);
 	if (!priv->lcdConnected) {
-		dev_err(&lcd->ld->dev, "%s: lcd was not connected\n", __func__);
+		dev_err(&lcd->ld->dev, "dsim : %s lcd was not connected\n", __func__);
 		goto exit;
 	}
 
@@ -516,7 +516,7 @@ static ssize_t lcd_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "BOE_%02X%02X%02X\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "BOE_%02X%02X%02X\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -526,7 +526,7 @@ static ssize_t window_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "%x %x %x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "%x %x %x\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -869,14 +869,13 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 	mutex_init(&lcd->lock);
 
 	ret = td4100_probe(dsim);
-	if (ret < 0) {
+	if (ret) {
 		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
 		goto probe_err;
 	}
 
 #if defined(CONFIG_EXYNOS_DECON_LCD_SYSFS)
 	lcd_init_sysfs(lcd);
-	init_bl_curve_debugfs(lcd->bd, NULL, &lcd->backlight_client);
 #endif
 
 #if defined(CONFIG_EXYNOS_DECON_MDNIE_LITE)

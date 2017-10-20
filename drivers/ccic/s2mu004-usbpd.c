@@ -2210,11 +2210,6 @@ static int s2mu004_usbpd_probe(struct i2c_client *i2c,
 	INIT_DELAYED_WORK(&pdic_data->water_dry_handler, s2mu004_pdic_water_dry_handler);
 	s2mu004_irq_thread(-1, pdic_data);
 
-	if (pdic_data->detach_valid) {
-		s2mu004_check_port_detect(pdic_data);
-		s2mu004_usbpd_check_rid(pdic_data);
-	}
-
 #if defined(CONFIG_MUIC_NOTIFIER)
 	muic_ccic_notifier_register(&pdic_data->type3_nb,
 			       type3_handle_notification,

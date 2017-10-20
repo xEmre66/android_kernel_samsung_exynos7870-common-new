@@ -56,7 +56,7 @@ int muic_wakeup_noti = 1;
 #if defined(CONFIG_MUIC_NOTIFIER)
 static struct notifier_block dock_notifier_block;
 
-void muic_send_dock_intent(int type)
+static void muic_send_dock_intent(int type)
 {
 	pr_info("%s: MUIC dock type(%d)\n", __func__, type);
 #ifdef CONFIG_SWITCH
@@ -114,7 +114,6 @@ static int muic_handle_dock_notification(struct notifier_block *nb,
 	int type = MUIC_DOCK_DETACHED;
 	const char *name;
 
-#if !defined(CONFIG_MUIC_UNIVERSAL_SM5705) && !defined(CONFIG_MUIC_UNIVERSAL_CCIC)
 	if (attached_dev == ATTACHED_DEV_JIG_UART_ON_MUIC) {
 		if (muic_wakeup_noti) {
 
@@ -131,14 +130,12 @@ static int muic_handle_dock_notification(struct notifier_block *nb,
 		pr_info("[muic] %s: ignore(%d)\n", __func__, attached_dev);
 		return NOTIFY_DONE;
 	}
-#endif
 
 	switch (attached_dev) {
 	case ATTACHED_DEV_DESKDOCK_MUIC:
 	case ATTACHED_DEV_DESKDOCK_VB_MUIC:
 #if defined(CONFIG_SEC_FACTORY)
 	case ATTACHED_DEV_JIG_UART_ON_MUIC:
-	case ATTACHED_DEV_JIG_UART_ON_VB_MUIC:
 #endif
 		if (action == MUIC_NOTIFY_CMD_ATTACH) {
 			type = MUIC_DOCK_DESKDOCK;

@@ -401,8 +401,8 @@
 		if_pmic_rstb: if-pmic-rstb {
 			samsung,pins = "gpc6-2";
 			samsung,pin-function = <1>;
-			samsung,pin-pud = <0>;
-			samsung,pin-con-pdn = <0>;
+			samsung,pin-pud = <3>;
+			samsung,pin-con-pdn = <3>;
 		};
 	};
 
@@ -446,7 +446,6 @@
 					used-gpio-control = <1>;
 					flash-en-gpio = <&gpd3 5 0>;
 					torch-en-gpio = <&gpd3 7 0>;
-					torch_table = <30 60 90 130 180>;
 				};
 				led2 {
 					ledname = "leds-sm5705-fled1";
@@ -639,13 +638,14 @@
 		status = "okay";
 		samsung,scl-clk-stretching;
 		samsung,transfer_delay = <50>;
-		pinctrl-names = "default","on_state", "off_state";
-		pinctrl-0 = <&hs_i2c6_bus &epen_irq &wacom_pwr_en>;
-		pinctrl-1 = <&epen_irq &wacom_pwr_en>;
-		pinctrl-2 = <&epen_input>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hs_i2c6_bus &wacom_pwr_en>;
 		wacom@56 {
 			compatible = "wacom,w90xx";
 			reg = <0x56>;
+			pinctrl-names = "on_irq", "off_state";
+			pinctrl-0 = <&epen_irq>;
+			pinctrl-1 = <&epen_input>;
 			interrupts = <3 0 0>;
 			interrupt-parent = <&gpa0>;
 			vddo-supply = <&wacom_ldo_en>;
@@ -1644,18 +1644,18 @@
 			type = "regulator,enable", "delay,usleep", "gpio,high", "delay,usleep";
 			gpios = <&gpd3 4 0x1>;
 			regulator = "LCD_1P8";
-			delay = <1000 1100>, <1000 1100>;
+			delay = <15000 16000>, <10000 11000>;
 		};
 		dsim_set_panel_power_disable {
 			type = "delay,usleep", "gpio,low", "delay,usleep", "gpio,low", "delay,usleep", "regulator,disable";
 			gpios = <&gpd4 1 0x1>, <&gpd3 4 0x1>;
 			regulator = "LCD_1P8";
-			delay = <1000 1100>, <1000 1100>, <5000 6000>;
+			delay = <1000 2000>, <2000 3000>, <2000 3000>;
 		};
 		dsim_reset_panel {
-			type = "gpio,high", "delay,usleep", "gpio,low", "delay,usleep", "gpio,high", "delay,usleep";
+			type = "gpio,high", "delay,usleep", "gpio,low", "delay,usleep", "gpio,high", "delay,msleep";
 			gpios = <&gpd4 1 0x1>, <&gpd4 1 0x1>, <&gpd4 1 0x1>;
-			delay = <5000 6000>, <5000 6000>, <10000 11000>;
+			delay = <5000 6000>, <1000 1100>, <50>;
 		};
 	};
 
@@ -1666,11 +1666,11 @@
 		ddi_type = <0>;
 		timing,refresh = <60>;
 		/* HBP HFP HSW */
-		timing,h-porch = <48 16 16>;
+		timing,h-porch = <64 16 4>;
 		/* VBP VFP VSW */
 		timing,v-porch = <6 8 2>;
-		timing,dsi-hs-clk = <500>;
-		timing,pms = <1 77 2>;
+		timing,dsi-hs-clk = <480>;
+		timing,pms = <13 480 1>;
 		timing,dsi-escape-clk = <16>;
 	};
 

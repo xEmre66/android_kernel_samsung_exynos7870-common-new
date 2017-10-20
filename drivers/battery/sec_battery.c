@@ -1544,15 +1544,10 @@ static bool sec_bat_set_aging_step(struct sec_battery_info *battery, int step)
 	battery->pdata->full_condition_vcell =
 		battery->pdata->age_data[battery->pdata->age_step].full_condition_vcell;
 
-#if defined(CONFIG_FUELGAUGE_S2MU005)
-	value.intval = battery->pdata->age_step;
-	psy_do_property(battery->pdata->fuelgauge_name, set,
-		POWER_SUPPLY_EXT_PROP_UPDATE_BATTERY_DATA, value);
-#else
 	value.intval = battery->pdata->full_condition_soc;
 	psy_do_property(battery->pdata->fuelgauge_name, set,
 		POWER_SUPPLY_PROP_CAPACITY_LEVEL, value);
-#endif
+
 	dev_info(battery->dev,
 		 "%s: Step(%d/%d), Cycle(%d), float_v(%d), r_v(%d), f_s(%d), f_vl(%d)\n",
 		 __func__,
@@ -1584,17 +1579,14 @@ static void sec_bat_aging_check(struct sec_battery_info *battery)
 			break;
 	}
 
-	dev_info(battery->dev,
-		"%s: [Long life] prev_step = %d, calc_step = %d\n",  __func__, prev_step, calc_step);
-
 	if (calc_step == prev_step)
 		return;
 
 	ret = sec_bat_set_aging_step(battery, calc_step);
 	dev_info(battery->dev,
-		"%s: %s change step (%d->%d), Cycle(%d)\n",
-		__func__, ret ? "Succeed in" : "Fail to",
-		prev_step, battery->pdata->age_step, battery->batt_cycle);
+		 "%s: %s change step (%d->%d), Cycle(%d)\n",
+		 __func__, ret ? "Succeed in" : "Fail to",
+		 prev_step, battery->pdata->age_step, battery->batt_cycle);
 }
 #endif
 
@@ -5381,12 +5373,7 @@ ssize_t sec_bat_store_attrs(
 			if (x >= 0) {
 				int prev_battery_cycle = battery->batt_cycle;
 				battery->batt_cycle = x;
-				dev_info(battery->dev,
-					"%s: [Long life] prev_battery_cycle = %d, new bat. cycle = %d\n",
-					__func__, prev_battery_cycle, battery->batt_cycle);
 				if (prev_battery_cycle < 0) {
-					dev_info(battery->dev,
-						"%s: [Long life] Do sec_bat_aging_check()\n", __func__);
 					sec_bat_aging_check(battery);
 				}
 			}
@@ -7616,13 +7603,13 @@ static int sec_bat_parse_dt(struct device *dev,
 		ret = of_property_read_u32_array(np, "battery,age_data",
 				 (u32 *)battery->pdata->age_data, len/sizeof(u32));
 		if (ret) {
-			pr_err("%s: [Long life] failed to read battery->pdata->age_data: %d\n",
+			pr_err("%s failed to read battery->pdata->age_data: %d\n",
 					__func__, ret);
 			kfree(battery->pdata->age_data);
 			battery->pdata->age_data = NULL;
 			battery->pdata->num_age_step = 0;
 		}
-		pr_err("%s: [Long life] num_age_step : %d\n", __func__, battery->pdata->num_age_step);
+		pr_err("%s num_age_step : %d\n", __func__, battery->pdata->num_age_step);
 		for (len = 0; len < battery->pdata->num_age_step; ++len) {
 			pr_err("[%d/%d]cycle:%d, float:%d, full_v:%d, recharge_v:%d, soc:%d\n",
 				len, battery->pdata->num_age_step-1,
@@ -7634,7 +7621,7 @@ static int sec_bat_parse_dt(struct device *dev,
 		}
 	} else {
 		battery->pdata->num_age_step = 0;
-		pr_err("%s: [Long life] there is no age_data\n", __func__);
+		pr_err("%s there is not age_data\n", __func__);
 	}
 #endif
 

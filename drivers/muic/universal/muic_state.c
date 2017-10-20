@@ -84,9 +84,7 @@ static void muic_handle_attach(muic_data_t *pmuic,
 	switch (pmuic->attached_dev) {
 	/* For GTACTIVE2 POGO */
 	case ATTACHED_DEV_POGO_MUIC:
-#ifdef CONFIG_MUIC_POGO
 		muic_mux_sel_control(pmuic, NORMAL_USB_PATH);
-#endif
 	case ATTACHED_DEV_USB_MUIC:
 	case ATTACHED_DEV_CDP_MUIC:
 	case ATTACHED_DEV_JIG_USB_OFF_MUIC:
@@ -203,12 +201,7 @@ static void muic_handle_attach(muic_data_t *pmuic,
 	switch (new_dev) {
 	/* For GTACTIVE2 POGO */
 	case ATTACHED_DEV_POGO_MUIC:
-#ifdef CONFIG_MUIC_POGO
-		/* Clear abnormal POGO connection status flag which is set by USB */
-		muic_set_pogo_status(pmuic, 0);
 		muic_mux_sel_control(pmuic, POGO_USB_PATH);
-		pmuic->attached_dev = new_dev;
-#endif
 	case ATTACHED_DEV_USB_MUIC:
 	case ATTACHED_DEV_CDP_MUIC:
 	case ATTACHED_DEV_TIMEOUT_OPEN_MUIC:
@@ -303,12 +296,7 @@ static void muic_handle_detach(muic_data_t *pmuic)
 	switch (pmuic->attached_dev) {
 	/* For GTACTIVE2 POGO */
 	case ATTACHED_DEV_POGO_MUIC:
-#ifdef CONFIG_MUIC_POGO
-		/* Clear abnormal POGO connection status flag which is set by USB */
-		muic_set_pogo_status(pmuic, 0);
 		muic_mux_sel_control(pmuic, NORMAL_USB_PATH);
-		pmuic->attached_dev = ATTACHED_DEV_NONE_MUIC;
-#endif
 	/* FIXME */
 	case ATTACHED_DEV_TIMEOUT_OPEN_MUIC:
 		pmuic->is_dcdtmr_intr = false;

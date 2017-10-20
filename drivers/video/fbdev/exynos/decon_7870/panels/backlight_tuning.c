@@ -10,7 +10,6 @@
 #include <linux/debugfs.h>
 #include <linux/sort.h>
 #include <linux/ctype.h>
-#include <linux/slab.h>
 
 #include "backlight_tuning.h"
 
@@ -62,9 +61,8 @@ static char *BL_POINT_NAME[] = { BL_POINTS };
 struct bl_info {
 	struct backlight_device *bd;
 	unsigned int *brightness_table;
-
-	unsigned int *default_level;
-	unsigned int *default_value;
+	unsigned int *bl_default_level;
+	unsigned int *bl_default_value;
 
 	unsigned int tune_value[INPUT_LIMIT];
 	unsigned int tune_level[INPUT_LIMIT];
@@ -80,28 +78,28 @@ static void make_bl_default_point(struct bl_info *bl)
 {
 	int i;
 
-	if (IS_ERR_OR_NULL(bl->default_level)) {
-		bl->default_level = kcalloc(BL_POINT_END, sizeof(unsigned int), GFP_KERNEL);
+	if (IS_ERR_OR_NULL(bl->bl_default_level)) {
+		bl->bl_default_level = kcalloc(BL_POINT_END, sizeof(unsigned int), GFP_KERNEL);
 
-		bl->default_level[BL_POINT_OFF] = 0;
-		bl->default_level[BL_POINT_MIN] = 1;
-		bl->default_level[BL_POINT_DFT] = bl->bd->props.brightness;
-		bl->default_level[BL_POINT_MAX] = 255;
-		bl->default_level[BL_POINT_OUT] = bl->bd->props.max_brightness;
+		bl->bl_default_level[BL_POINT_OFF] = 0;
+		bl->bl_default_level[BL_POINT_MIN] = 1;
+		bl->bl_default_level[BL_POINT_DFT] = bl->bd->props.brightness;
+		bl->bl_default_level[BL_POINT_MAX] = 255;
+		bl->bl_default_level[BL_POINT_OUT] = bl->bd->props.max_brightness;
 
-		for (i = 0; i <= bl->default_level[BL_POINT_MAX]; i++) {
+		for (i = 0; i <= bl->bl_default_level[BL_POINT_MAX]; i++) {
 			if (bl->brightness_table[i]) {
-				bl->default_level[BL_POINT_MIN] = i;
+				bl->bl_default_level[BL_POINT_MIN] = i;
 				break;
 			}
 		}
 	}
 
-	if (IS_ERR_OR_NULL(bl->default_value)) {
-		bl->default_value = kcalloc(BL_POINT_END, sizeof(unsigned int), GFP_KERNEL);
+	if (IS_ERR_OR_NULL(bl->bl_default_value)) {
+		bl->bl_default_value = kcalloc(BL_POINT_END, sizeof(unsigned int), GFP_KERNEL);
 
 		for (i = 0; i < BL_POINT_END; i++)
-			bl->default_value[i] = bl->brightness_table[bl->default_level[i]];
+			bl->bl_default_value[i] = bl->brightness_table[bl->bl_default_level[i]];
 	}
 }
 
@@ -210,7 +208,7 @@ static int check_curve(struct bl_info *bl, char *str)
 	if (!max_bl_level) {
 		dev_info(&bl->bd->dev, "max_bl_level: %d, so we make default bl_level\n", max_bl_value);
 		for (i = 0; i <= off_bl_point; i++)
-			bl_level[i] = bl->default_level[i];
+			bl_level[i] = bl->bl_default_level[i];
 
 		max_bl_level = off_bl_point;
 	}
@@ -271,10 +269,10 @@ static int bl_tuning_show(struct seq_file *m, void *unused)
 
 	seq_puts(m, "+DEFAULT-----------------------------------------\n");
 	for (i = BL_POINT_OFF; i >= BL_POINT_MAX; i--) {
-		seq_printf(m, "%4s: %3d %3d\n", BL_POINT_NAME[i], bl->default_value[i], bl->default_level[i]);
+		seq_printf(m, "%4s: %3d %3d\n", BL_POINT_NAME[i], bl->bl_default_value[i], bl->bl_default_level[i]);
 	};
 	if (bl->bd->props.max_brightness > 255)
-		seq_printf(m, "%4s: %3d %3d\n", BL_POINT_NAME[BL_POINT_OUT], bl->default_value[BL_POINT_OUT], bl->default_level[BL_POINT_OUT]);
+		seq_printf(m, "%4s: %3d %3d\n", BL_POINT_NAME[BL_POINT_OUT], bl->bl_default_value[BL_POINT_OUT], bl->bl_default_level[BL_POINT_OUT]);
 
 	for (off = 0; off < INPUT_LIMIT; off++) {
 		if (!bl->tune_level[off]) {
@@ -308,12 +306,6 @@ static ssize_t bl_tuning_write(struct file *filp, const char __user *buf,
 
 	if (*ppos != 0)
 		return 0;
-
-	if (sysfs_streq(buf, "0")) {
-		dev_info(&bl->bd->dev, "%s: input is 0(zero), so we try to make with default\n", __func__);
-		make_bl_curve(bl, bl->default_value, bl->default_level);
-		goto exit;
-	}
 
 	if (len >= sizeof(wbuf)) {
 		dev_info(&bl->bd->dev, "%s: input size is too big, %zu\n", __func__, len);

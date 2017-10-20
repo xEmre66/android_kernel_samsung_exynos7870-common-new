@@ -5596,16 +5596,16 @@ static void run_force_calibration(void *device_data)
 		goto autotune_fail;
 	}
 
-	if (info->touch_count > 0) {
-		touch_on = true;
-		input_err(true, info->dev, "%s: finger on touch(%d)\n", __func__, info->touch_count);
-	}
-
 	/* for Tablet model : TSP connection check at pretest apk */
 	if (info->external_factory && !tsp_connection_check(info)) {
 		input_err(true, info->dev, "%s: TSP is not connected. Do not run calibration\n", __func__);
 		snprintf(buff, sizeof(buff), "%s", "NG_TSP_NOT_CONNECT");
 		goto autotune_fail;
+	}
+
+	if (info->touch_count > 0) {
+		touch_on = true;
+		input_err(true, info->dev, "%s: finger on touch(%d)\n", __func__, info->touch_count);
 	}
 
 	disable_irq(info->irq);

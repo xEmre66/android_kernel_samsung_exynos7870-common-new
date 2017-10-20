@@ -426,18 +426,6 @@ static void sm5703_set_regulation_voltage(struct sm5703_charger_data *charger,
 	mutex_unlock(&charger->io_lock);
 }
 
-#if defined(CONFIG_BATTERY_SWELLING)
-static int sm5703_get_regulation_voltage(struct sm5703_charger_data *charger)
-{
-	int data = 0;
-
-	data = sm5703_reg_read(charger->i2c, SM5703_CHGCNTL3);
-	data &= SM5703_BATREG_MASK;
-
-	return (4120 + (data * 10));
-}
-#endif
-
 static void sm5703_set_fast_charging_current(struct sm5703_charger_data *charger,
 		int charging_current)
 {
@@ -773,11 +761,6 @@ static int sec_chg_get_property(struct power_supply *psy,
 		case POWER_SUPPLY_PROP_CURRENT_FULL:
 			val->intval = sm5703_get_topoff_current(charger);
 			break;
-#if defined(CONFIG_BATTERY_SWELLING)
-		case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-			val->intval = sm5703_get_regulation_voltage(charger);
-		break;
-#endif
 		case POWER_SUPPLY_PROP_CHARGE_TYPE:
 			if (!charger->is_charging || charger->cable_type == POWER_SUPPLY_TYPE_BATTERY) {
 				val->intval = POWER_SUPPLY_CHARGE_TYPE_NONE;
@@ -846,13 +829,6 @@ static int sec_chg_set_property(struct power_supply *psy,
 		case POWER_SUPPLY_PROP_CURRENT_FULL:
 			sm5703_set_topoff_current(charger, val->intval);
 			break;
-#if defined(CONFIG_BATTERY_SWELLING)
-		case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-			pr_info("%s: float voltage(%d)\n", __func__, val->intval);
-			charger->pdata->chg_float_voltage = val->intval;
-			sm5703_set_regulation_voltage(charger, val->intval);
-			break;
-#endif
 		case POWER_SUPPLY_PROP_HEALTH:
 			/* charger->ovp = val->intval; */
 			break;

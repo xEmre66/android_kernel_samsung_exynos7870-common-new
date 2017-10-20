@@ -45,10 +45,7 @@ struct lcd_info {
 	int				temperature;
 	unsigned int			temperature_index;
 
-	union {
-		u32			value;
-		unsigned char		id[HX8279D_ID_LEN];
-	} id_info;
+	unsigned char			id[3];
 	unsigned char			dump_info[3];
 
 	struct dsim_device		*dsim;
@@ -67,12 +64,14 @@ struct lcd_info {
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdSize)
 {
-	int ret = 0;
-	int retry = 5;
+	int ret;
+	int retry;
 	struct panel_private *priv = &lcd->dsim->priv;
 
 	if (!priv->lcdConnected)
-		return ret;
+		return cmdSize;
+
+	retry = 5;
 
 try_write:
 	if (cmdSize == 1)
@@ -94,7 +93,7 @@ try_write:
 
 static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 {
-	int ret = 0;
+	int ret;
 	int retry = 2;
 	struct panel_private *priv = &lcd->dsim->priv;
 
@@ -263,20 +262,20 @@ static int hx8279d_get_id(struct lcd_info *lcd)
 	int i = 0;
 	struct panel_private *priv = &lcd->dsim->priv;
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
 
 	if (lcdtype == 0) {
 		priv->lcdConnected = 0;
 		goto read_exit;
 	}
 
-	lcd->id_info.id[0] = (lcdtype & 0xFF0000) >> 16;
-	lcd->id_info.id[1] = (lcdtype & 0x00FF00) >> 8;
-	lcd->id_info.id[2] = (lcdtype & 0x0000FF) >> 0;
+	lcd->id[0] = (lcdtype & 0xFF0000) >> 16;
+	lcd->id[1] = (lcdtype & 0x00FF00) >> 8;
+	lcd->id[2] = (lcdtype & 0x0000FF) >> 0;
 
 	dev_info(&lcd->ld->dev, "READ ID : ");
 	for (i = 0; i < 3; i++)
-		dev_info(&lcd->ld->dev, "%02x, ", lcd->id_info.id[i]);
+		dev_info(&lcd->ld->dev, "%02x, ", lcd->id[i]);
 	dev_info(&lcd->ld->dev, "\n");
 
 read_exit:
@@ -290,7 +289,7 @@ static int hx8279d_read_id(struct lcd_info *lcd)
 	struct panel_private *priv = &lcd->dsim->priv;
 	char buf = 0;
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called\n", __func__);
 
 	if (lcdtype == 0) {
 		priv->lcdConnected = 0;
@@ -299,19 +298,19 @@ static int hx8279d_read_id(struct lcd_info *lcd)
 
 	priv->lcdConnected = 1;
 
-	ret = dsim_read_hl_data(lcd, HX8279D_ID_REG, 1, &lcd->id_info.id[0]);
-	ret = dsim_read_hl_data(lcd, HX8279D_ID_REG + 1, 1, &lcd->id_info.id[1]);
-	ret = dsim_read_hl_data(lcd, HX8279D_ID_REG + 2, 1, &lcd->id_info.id[2]);
+	ret = dsim_read_hl_data(lcd, HX8279D_ID_REG, 1, &lcd->id[0]);
+	ret = dsim_read_hl_data(lcd, HX8279D_ID_REG + 1, 1, &lcd->id[1]);
+	ret = dsim_read_hl_data(lcd, HX8279D_ID_REG + 2, 1, &lcd->id[2]);
 	ret = dsim_read_hl_data(lcd, HX8279D_DUAL_REG, 1, &buf);
 
 	if (ret <= 0)
 		priv->lcdConnected = 0;
 
-	lcd->id_info.id[2] = lcd->id_info.id[2] + buf;
+	lcd->id[2] = lcd->id[2] + buf;
 
 	dev_info(&lcd->ld->dev, "READ ID : ");
-	for (i = 0; i < HX8279D_ID_LEN; i++)
-		dev_info(&lcd->ld->dev, "%02x, ", lcd->id_info.id[i]);
+	for (i = 0; i < 3; i++)
+		dev_info(&lcd->ld->dev, "%02x, ", lcd->id[i]);
 	dev_info(&lcd->ld->dev, "\n");
 
 read_exit:
@@ -499,7 +498,7 @@ static ssize_t lcd_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "BOE_%02X%02X%02X\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "BOE_%02X%02X%02X\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -509,7 +508,7 @@ static ssize_t window_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "%x %x %x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "%x %x %x\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -880,7 +879,7 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 	mutex_init(&lcd->lock);
 
 	ret = hx8279d_probe(dsim);
-	if (ret < 0) {
+	if (ret) {
 		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
 		goto probe_err;
 	}

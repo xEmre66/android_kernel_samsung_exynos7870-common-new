@@ -136,10 +136,6 @@ static int check_event_type(enum otg_notify_events event)
 		ret |= (NOTIFY_EVENT_STATE | NOTIFY_EVENT_NEED_VBUSDRIVE
 				| NOTIFY_EVENT_DELAY | NOTIFY_EVENT_NEED_HOST);
 		break;
-	case NOTIFY_EVENT_POGO:
-		ret |= (NOTIFY_EVENT_STATE | NOTIFY_EVENT_DELAY
-				| NOTIFY_EVENT_NEED_HOST);
-		break;
 	case NOTIFY_EVENT_ALL_DISABLE:
 	case NOTIFY_EVENT_HOST_DISABLE:
 	case NOTIFY_EVENT_CLIENT_DISABLE:
@@ -896,9 +892,8 @@ static void otg_notify_state(struct otg_notify *n,
 		break;
 	}
 
-	if (((type & NOTIFY_EVENT_NEED_VBUSDRIVE)
-				&& event != NOTIFY_EVENT_HOST)
-				|| event == NOTIFY_EVENT_POGO) {
+	if ((type & NOTIFY_EVENT_NEED_VBUSDRIVE)
+				&& event != NOTIFY_EVENT_HOST) {
 		if (enable) {
 			if (n->device_check_sec) {
 				if (prev_c_type != NOTIFY_EVENT_HOST)

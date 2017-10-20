@@ -37,7 +37,7 @@
 #define LEVEL_IS_HBM(brightness)		(brightness == EXTEND_BRIGHTNESS)
 
 #define DSI_WRITE(cmd, size)		do {				\
-	ret |= dsim_write_hl_data(lcd, cmd, size);			\
+	ret = dsim_write_hl_data(lcd, cmd, size);			\
 	if (ret < 0) {							\
 		dev_err(&lcd->ld->dev, "%s: failed to write %s\n", __func__, #cmd);	\
 		ret = -EPERM;						\
@@ -112,10 +112,7 @@ struct lcd_info {
 	int				temperature;
 	unsigned int			temperature_index;
 
-	union {
-		u32			value;
-		unsigned char		id[LDI_LEN_ID];
-	} id_info;
+	unsigned char			id[LDI_LEN_ID];
 	unsigned char			mtp[LDI_LEN_MTP];
 	unsigned char			date[LDI_LEN_DATE];
 	unsigned int			coordinate[2];
@@ -152,12 +149,14 @@ static int pinctrl_enable(struct lcd_info *lcd, int enable)
 
 static int dsim_write_hl_data(struct lcd_info *lcd, const u8 *cmd, u32 cmdSize)
 {
-	int ret = 0;
-	int retry = 5;
+	int ret;
+	int retry;
 	struct panel_private *priv = &lcd->dsim->priv;
 
 	if (!priv->lcdConnected)
-		return ret;
+		return 0;
+
+	retry = 5;
 
 try_write:
 	if (cmdSize == 1)
@@ -179,7 +178,7 @@ try_write:
 
 static int dsim_read_hl_data(struct lcd_info *lcd, u8 addr, u32 size, u8 *buf)
 {
-	int ret = 0;
+	int ret;
 	int retry = 4;
 	struct panel_private *priv = &lcd->dsim->priv;
 
@@ -342,10 +341,10 @@ static int dsim_panel_set_acl(struct lcd_info *lcd, int force)
 		goto exit;
 
 acl_update:
-	DSI_WRITE(lcd->acl_table[acl_status], ACL_CMD_CNT);
-	DSI_WRITE(lcd->opr_table[opr_status], OPR_CMD_CNT);
-	lcd->current_acl.value = acl_value.value;
-	dev_info(&lcd->ld->dev, "acl: %x, brightness: %d, adaptive_control: %d\n", lcd->current_acl.value, lcd->brightness, lcd->adaptive_control);
+		DSI_WRITE(lcd->acl_table[acl_status], ACL_CMD_CNT);
+		DSI_WRITE(lcd->opr_table[opr_status], OPR_CMD_CNT);
+		lcd->current_acl.value = acl_value.value;
+		dev_info(&lcd->ld->dev, "acl: %x, brightness: %d, adaptive_control: %d\n", lcd->current_acl.value, lcd->brightness, lcd->adaptive_control);
 
 exit:
 	return ret;
@@ -647,7 +646,7 @@ static int ea8061s_read_id(struct lcd_info *lcd)
 	struct panel_private *priv = &lcd->dsim->priv;
 	int ret = 0;
 
-	ret = ea8061s_read_info(lcd, LDI_REG_ID, LDI_LEN_ID, lcd->id_info.id);
+	ret = ea8061s_read_info(lcd, LDI_REG_ID, LDI_LEN_ID, lcd->id);
 	if (ret < 0) {
 		priv->lcdConnected = 0;
 		dev_err(&lcd->ld->dev, "%s: fail\n", __func__);
@@ -765,7 +764,7 @@ static int ea8061s_init(struct lcd_info *lcd)
 {
 	int ret = 0;
 
-	dev_info(&lcd->ld->dev, "%s\n", __func__);
+	dev_info(&lcd->ld->dev, "MDD : %s was called : ea8061s\n", __func__);
 	usleep_range(5000, 6000);
 
 	/* Test Key Enable */
@@ -838,11 +837,11 @@ static int panel_dpui_notifier_callback(struct notifier_block *self,
 			lcd->date[2] & 0x1F, lcd->date[3] & 0x3F, lcd->date[4] & 0x3F);
 	set_dpui_field(DPUI_KEY_MAID_DATE, tbuf, size);
 
-	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%d", lcd->id_info.id[0]);
+	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%d", lcd->id[0]);
 	set_dpui_field(DPUI_KEY_LCDID1, tbuf, size);
-	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%d", lcd->id_info.id[1]);
+	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%d", lcd->id[1]);
 	set_dpui_field(DPUI_KEY_LCDID2, tbuf, size);
-	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%d", lcd->id_info.id[2]);
+	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%d", lcd->id[2]);
 	set_dpui_field(DPUI_KEY_LCDID3, tbuf, size);
 	size = snprintf(tbuf, MAX_DPUI_VAL_LEN, "%s_%s", DPUI_VENDOR_NAME, DPUI_MODEL_NAME);
 	set_dpui_field(DPUI_KEY_DISP_MODEL, tbuf, size);
@@ -982,7 +981,7 @@ static ssize_t lcd_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "SDC_%02X%02X%02X\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "SDC_%02X%02X%02X\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -992,7 +991,7 @@ static ssize_t window_type_show(struct device *dev,
 {
 	struct lcd_info *lcd = dev_get_drvdata(dev);
 
-	sprintf(buf, "%x %x %x\n", lcd->id_info.id[0], lcd->id_info.id[1], lcd->id_info.id[2]);
+	sprintf(buf, "%x %x %x\n", lcd->id[0], lcd->id[1], lcd->id[2]);
 
 	return strlen(buf);
 }
@@ -1175,11 +1174,6 @@ static ssize_t dump_register_show(struct device *dev,
 			ret = dsim_read_hl_data_offset(lcd, reg, len, dump, offset);
 		else
 			ret = dsim_read_hl_data(lcd, reg, len, dump);
-
-		if (ret < 0) {
-			dev_err(&lcd->ld->dev, "%s: failed to read, %x, %d, %d\n", __func__, reg, len, offset);
-			goto exit;
-		}
 
 		DSI_WRITE(SEQ_TEST_KEY_OFF_F0, ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0));
 		DSI_WRITE(SEQ_TEST_KEY_OFF_FC, ARRAY_SIZE(SEQ_TEST_KEY_OFF_FC));
@@ -1387,7 +1381,7 @@ static void lcd_init_svc(struct lcd_info *lcd)
 	dev_set_name(dev, "OCTA");
 	dev_set_drvdata(dev, lcd);
 	ret = device_register(dev);
-	if (ret < 0) {
+	if (ret) {
 		dev_info(&lcd->ld->dev, "%s: device_register fail\n", __func__);
 		return;
 	}
@@ -1482,7 +1476,7 @@ static int dsim_panel_probe(struct dsim_device *dsim)
 	mutex_init(&lcd->lock);
 
 	ret = ea8061s_probe(dsim);
-	if (ret < 0) {
+	if (ret) {
 		dev_err(&lcd->ld->dev, "%s: failed to probe panel\n", __func__);
 		goto probe_err;
 	}

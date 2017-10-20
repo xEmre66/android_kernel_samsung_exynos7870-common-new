@@ -14,8 +14,6 @@
 #define SEC_TSP_FACTORY_TEST
 #define PAT_CONTROL
 #define USE_POR_AFTER_I2C_RETRY
-/* glove mode */
-#define CONFIG_GLOVE_TOUCH
 
 #define BRUSH_Z_DATA		63	/* for ArtCanvas */
 

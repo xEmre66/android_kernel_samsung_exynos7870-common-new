@@ -82,10 +82,10 @@
 			sx9306-i2c,ctrl2 = <0x77>; /* Gain: 8, Freq : 167, Resolution : Finest */
 			sx9306-i2c,ctrl3 = <0x03>; /* Rawfilter: High */
 			#sx9306-i2c,ctrl5 = <0x0f>; /* AVGNEG:001 AVGPOS : 111 */
-			sx9306-i2c,normal-thd = <7>; /* normal touch threshold */
+			sx9306-i2c,normal-thd = <5>; /* normal touch threshold */
 			sx9306-i2c,ch-main = <2>; /* channel number */
 			sx9306-i2c,ch-sub1 = <0xff>; /*oxff: Not be used sub channel */
-			sx9306-i2c,ta-thd = <0x11>; /* TA threhold : 400 */
+			sx9306-i2c,ta-thd = <0x0f>; /* TA threhold : 300 */
 		};
 		
 		sx9306_wifi-i2c@2a{
@@ -596,22 +596,5 @@
 		regulator-max-microvolt = <3300000>;
 		gpio = <&gpa1 2 0>;
 		enable-active-high;
-	};
-
-	pinctrl@139F0000 {
-		tsp_en: tsp-en {
-			samsung,pins = "gpa1-2";
-			samsung,pin-function = <0x1>;
-			samsung,pin-pud = <0>;
-			samsung,pin-drv = <0>;
-		};
-	};
-
-	i2c@13840000 {
-		pinctrl-names = "default";
-		pinctrl-0 = <&i2c3_bus &tsp_en>;
-		touchscreen@49 {
-			stm,bringup = <2>;
-		};
 	};
 };
