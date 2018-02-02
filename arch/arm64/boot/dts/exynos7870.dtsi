@@ -88,6 +88,24 @@
 		pmu_base = <0x10480000>;
 	};
 
+	firmware: firmware {
+		android {
+			compatible = "android,firmware";
+			fstab {
+				compatible = "android,fstab";
+				system {
+					compatible = "android,system";
+					dev = "/dev/block/platform/13540000.dwmmc0/by-name/SYSTEM";
+					type = "ext4";
+					mnt_flags = "ro,errors=panic";
+					fsmgr_flags = "wait";
+					status = "ok";
+				};
+
+			};
+		};
+	};
+
 	cpus {
 		#address-cells = <2>;
 		#size-cells = <0>;
@@ -1606,8 +1624,8 @@
 		clock-names = "disp_pll", "decon_core",  "eclk_user",  "vclk_user",  "eclk_leaf",  "vclk_leaf";
 
 		ip_ver = <4>;
-		max_win = <3>;
-		n_sink_pad = <3>;
+		max_win = <7>;
+		n_sink_pad = <7>;
 		n_src_pad = <1>;
 		default_win = <0>;
 		trig_mode = <0>;	/* 0: hw trigger, 1: sw trigger */
